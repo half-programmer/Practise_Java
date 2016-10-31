@@ -12,11 +12,12 @@ import java.util.List;
  * 说明：树
  */
 public class Tree<T> {
-    public final int DEFAULT_SIZE = 2;
-    private int size;
-    private int count; // 为结点计数
-    private Object[] nodes; //用object装泛型
 
+    protected final int DEFAULT_SIZE = 2;
+    protected int size;
+    protected int count; // 为结点计数
+    protected Object[] nodes; //用object装泛型
+    protected int time =1;
     public Tree(){
         size = DEFAULT_SIZE;
         nodes = new Object[size];
@@ -34,38 +35,84 @@ public class Tree<T> {
         count = 1;
     }
 
-    public void addNode(Node<T>currentNode, ArrayList<Node<T>>treenodes){
-        int currentParentNodeNumber = 0;
-        for(int i=1; i<size; i++){
-            //如果左孩子是空
-            if(currentNode.getLeftChild() == null){
-                // 设置为孩子
-                nodes[i] = treenodes.get(i);
-                currentNode.setChild((Node<T>) nodes[i]);
-            }
-            // 如果右孩子是空
-            else if(currentNode.getRightChild() == null){
-                // 设置为孩子
-                nodes[i] = treenodes.get(i);
-                currentNode.setChild((Node<T>) nodes[i]);
-            }
-            else {
-                //如果左右都满，将当前节点移动到左孩子
+    /**
+     * @param currentNode:当前操作的结点
+     * @param treenodes：存储n待加入的node的数组
+     * @param currentNodeNumber：当前要取出的node的序号
+     */
+    public void addNode(Node<T>currentNode,ArrayList<Node<T>>treenodes, int currentNodeNumber){
+        if(currentNodeNumber<size){
+        // 如果当前节点没有被初始化
+        if (currentNode.getData() == null){
+            currentNode.setData(treenodes.get(currentNodeNumber).getData());
+            nodes[currentNodeNumber] = currentNode;
+            addNode(currentNode.getParent(),treenodes,currentNodeNumber+1);
+        }else{
+            // 如果为根节点,
+            /**@attention: 注意如果之后数值重复则不能这样判断*/
+            if (currentNode.getData()==treenodes.get(0).getData()){
+                if(currentNode.getLeftChild() == null){
+                    //创建左节点
+                    currentNode.setAndGetLeftChild(currentNode);
+                    //初始化左节点数据
+                    currentNode.getLeftChild().setData(treenodes.get(currentNodeNumber).getData());
+                    //继续调用
+                    addNode(currentNode,treenodes,currentNodeNumber+1);
+                }
+                else if(currentNode.getRightChild() == null){
+                    //创建右节点
+                    currentNode.setAndGetRightChild(currentNode);
+                    //初始化左节点数据
+                    currentNode.getRightChild().setData(treenodes.get(currentNodeNumber).getData());
+                    //继续调用
+                    addNode(currentNode,treenodes,currentNodeNumber+1);
+                }
+                else {
+                    //给左节点
+                    if(time ==1) {
+                        //到左处最深
+                        while(currentNode.getLeftChild()!=null){
+                            currentNode = currentNode.getLeftChild();
+                        }
+                        //为空
+                        time=0;
+                        addNode(currentNode, treenodes, currentNodeNumber);
 
+                    }else {
+                        while(currentNode.getRightChild()!=null){
+                            currentNode = currentNode.getRightChild();
+                        }
+                        time=1;
+                        addNode(currentNode, treenodes, currentNodeNumber);
+
+                    }
+                }
             }
-        }
-    }
-    //传入结点列表并初始化
-    // 左孩子序号是当前节点号*2+1，右结点是*2+2
-    public Tree(ArrayList<Node<T>>treenodes){
-        this.size = treenodes.size();
-        nodes = new Object[size];
-        nodes[0] = treenodes.get(0); // 初始化根节点
-
-        // 当前父节点
-        Node<T>currentParentNode = (Node<T>) nodes[0];
-        addNode(currentParentNode, treenodes);
-
+            // 不为根节点
+            else{
+                //左孩子为空，设置左孩子
+                if(currentNode.getLeftChild() == null){
+                    //创建左节点
+                    currentNode.setAndGetLeftChild(currentNode);
+                    //初始化左节点数据
+                    currentNode.getLeftChild().setData(treenodes.get(currentNodeNumber).getData());
+                    //继续调用
+                    addNode(currentNode,treenodes,currentNodeNumber+1);
+                }
+                else if(currentNode.getRightChild() == null){
+                    //创建右节点
+                    currentNode.setAndGetRightChild(currentNode);
+                    //初始化左节点数据
+                    currentNode.getRightChild().setData(treenodes.get(currentNodeNumber).getData());
+                    //继续调用
+                    addNode(currentNode,treenodes,currentNodeNumber+1);
+                }
+                else {
+                    //自己和自己的左右结点都不为空，对父节点进行操作
+                    addNode(currentNode.getParent(),treenodes,currentNodeNumber);
+                }
+            }
+        }}
     }
 
 
@@ -112,15 +159,15 @@ public class Tree<T> {
         this.nodes = newNodes;
         System.out.println("enlarge");
     }
-
-    // 增加一个结点,并指名父节点
-    public void add(Node<T>newNode, Node<T>parent){
-        check();
-        newNode.setParent(this.position(parent));
-        add(newNode);
-        parent.setChild(parent);
-
-    }
+//
+//    // 增加一个结点,并指名父节点
+//    public void add(Node<T>newNode, Node<T>parent){
+//        check();
+//        newNode.setParent(this.position(parent));
+//        add(newNode);
+//        parent.setChild(parent);
+//
+//    }
 
     //获取节点在数组的存储位置
     public int position(Node<T> node) {
@@ -144,28 +191,28 @@ public class Tree<T> {
         return (Node<T>)nodes[0];
     }
 
-    //获取树的深度，只有根节点时为1
-    @SuppressWarnings("unchecked")
-    public int getDepth(){
-
-        int max = 1;
-        if(this.nodes[0] == null){
-            return 0;
-        }
-
-        for(int i=0;i<this.count;i++){
-            int deep = 1;
-            int location = ((Node<T>)(this.nodes[i])).getParent(); // 强转转的是nodes[i]，这样才能调用getParent()
-            while(location != -1 && this.nodes[location] != null){
-                location = ((Node<T>)(this.nodes[location])).getParent();
-                deep++;
-            }
-            if(max < deep){
-                max = deep;
-            }
-        }
-        return max;
-    }
+//    //获取树的深度，只有根节点时为1
+//    @SuppressWarnings("unchecked")
+//    public int getDepth(){
+//
+//        int max = 1;
+//        if(this.nodes[0] == null){
+//            return 0;
+//        }
+//
+//        for(int i=0;i<this.count;i++){
+//            int deep = 1;
+//            int location = ((Node<T>)(this.nodes[i])).getParent(); // 强转转的是nodes[i]，这样才能调用getParent()
+//            while(location != -1 && this.nodes[location] != null){
+//                location = ((Node<T>)(this.nodes[location])).getParent();
+//                deep++;
+//            }
+//            if(max < deep){
+//                max = deep;
+//            }
+//        }
+//        return max;
+//    }
 
     // 获取整棵树有多少节点
     public int getSize(){
